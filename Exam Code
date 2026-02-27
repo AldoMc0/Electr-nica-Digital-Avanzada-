@@ -1,0 +1,56 @@
+#include <avr/io.h>
+
+int main(void)
+{
+    unsigned char numeros[16] = 
+    {
+        0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07,
+        0x7F, 0x6F, 0x77, 0x7C, 0x39, 0x5E, 0x79, 0x71
+    };
+    
+    DDRA = 0xFF;
+    DDRB = 0xFC;
+    DDRC = 0xFC;
+    
+    PORTB = PORTB | 0x03;
+    PORTC = PORTC | 0x03;
+    
+    while(1)
+    {
+        unsigned char dato = 0;
+        unsigned char entradaB = 0;
+        unsigned char entradaC = 0;
+        
+        entradaB = PINB;
+        entradaC = PINC;
+        
+        if(entradaB & 0x02) dato = dato + 8;
+        if(entradaB & 0x01) dato = dato + 4;
+        if(entradaC & 0x02) dato = dato + 2;
+        if(entradaC & 0x01) dato = dato + 1;
+        
+        if(dato == 1 || dato == 3 || dato == 5 || dato == 7 || 
+           dato == 9 || dato == 11 || dato == 13 || dato == 15)
+        {
+            PORTA = PORTA | 0x01;
+        }
+        else
+        {
+            PORTA = PORTA & 0xFE;
+        }
+        
+        if(dato == 1 || dato == 2 || dato == 4 || dato == 8)
+        {
+            PORTA = PORTA | 0x02;
+        }
+        else
+        {
+            PORTA = PORTA & 0xFD;
+        }
+        
+        PORTA = PORTA & 0x03;
+        PORTA = PORTA | (numeros[dato] << 2);
+    }
+    
+    return 0;
+}
