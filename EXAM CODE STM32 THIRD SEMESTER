@@ -1,0 +1,125 @@
+#include "main.h"
+#include "stm32f1xx_hal.h"
+
+#define PIN_WORK    GPIO_PIN_0
+#define PIN_READY   GPIO_PIN_1  
+#define PIN_WARNING GPIO_PIN_2
+#define PIN_BOMBA   GPIO_PIN_3
+#define PUERTO_LEDS GPIOB
+
+#define SEG_A GPIO_PIN_4
+#define SEG_B GPIO_PIN_5
+#define SEG_C GPIO_PIN_6
+#define SEG_D GPIO_PIN_7
+#define SEG_E GPIO_PIN_8
+#define SEG_F GPIO_PIN_9
+#define SEG_G GPIO_PIN_10
+
+int nivel = 8;
+int bombaPrendida = 0;
+
+const int segmentos[9][7] = 
+{
+    {0,0,0,0,0,0,1},
+    {1,0,0,1,1,1,1},
+    {0,0,1,0,0,1,0},
+    {0,0,0,0,1,1,0},
+    {1,0,0,1,1,0,0},
+    {0,1,0,0,1,0,0},
+    {0,1,0,0,0,0,0},
+    {0,0,0,1,1,1,1},
+    {0,0,0,0,0,0,0}
+};
+
+void leerNivel(void);
+void controlarIndicadores(void);
+void controlarBomba(void);
+void actualizarDisplay(void);
+void prenderSegmento(int pin, int estado);
+
+int main(void) {
+    HAL_Init();
+    SystemClock_Config();
+    
+    GPIO_InitTypeDef GPIO_Led = {0};
+    GPIO_Led.Pin = PIN_WORK | PIN_READY | PIN_WARNING | PIN_BOMBA |
+                   SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G;
+    GPIO_Led.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_Led.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(PUERTO_LEDS, &GPIO_Led);
+    
+    while(1) {
+        leerNivel();
+        controlarIndicadores();
+        controlarBomba();
+        actualizarDisplay();
+        HAL_Delay(100);
+    }
+}
+
+void leerNivel(void) {
+    static int contador = 0;
+    contador++;
+    if(contador > 200) {
+        contador = 0;
+        nivel--;
+        if(nivel < 0) nivel = 8;
+    }
+}
+
+void controlarIndicadores(void) {
+    if(nivel >= 3) {
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_READY, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_READY, GPIO_PIN_RESET);
+    }
+    
+    if(nivel < 2) {
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_WARNING, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_WARNING, GPIO_PIN_RESET);
+    }
+}
+
+void controlarBomba(void) {
+    if(!bombaPrendida && nivel >= 3) {
+        bombaPrendida = 1;
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_BOMBA, GPIO_PIN_SET);
+    }
+    
+    if(bombaPrendida && (nivel == 1 || nivel == 0)) {
+        bombaPrendida = 0;
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_BOMBA, GPIO_PIN_RESET);
+    }
+    
+    if(bombaPrendida) {
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_WORK, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(PUERTO_LEDS, PIN_WORK, GPIO_PIN_RESET);
+    }
+}
+
+void actualizarDisplay(void) {
+    int idx = nivel;
+    if(idx < 0) idx = 0;
+    if(idx > 8) idx = 8;
+    
+    prenderSegmento(SEG_A, segmentos[idx][0]);
+    prenderSegmento(SEG_B, segmentos[idx][1]);
+    prenderSegmento(SEG_C, segmentos[idx][2]);
+    prenderSegmento(SEG_D, segmentos[idx][3]);
+    prenderSegmento(SEG_E, segmentos[idx][4]);
+    prenderSegmento(SEG_F, segmentos[idx][5]);
+    prenderSegmento(SEG_G, segmentos[idx][6]);
+}
+
+void prenderSegmento(int pin, int estado) {
+    if(estado == 1) {
+        HAL_GPIO_WritePin(PUERTO_LEDS, pin, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(PUERTO_LEDS, pin, GPIO_PIN_RESET);
+    }
+}
+
+void SystemClock_Config(void) {
+}
