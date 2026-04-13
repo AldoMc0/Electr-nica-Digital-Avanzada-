@@ -119,6 +119,7 @@ void prenderSegmento(int pin, int estado) {
     } else {
         HAL_GPIO_WritePin(PUERTO_LEDS, pin, GPIO_PIN_RESET);
     }
+
 }
 
 void SystemClock_Config(void) {
